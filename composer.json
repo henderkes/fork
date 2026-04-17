@@ -1,0 +1,47 @@
+{
+  "name": "henderkes/fork",
+  "description": "Fork-based parallel execution via pcntl.",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.4",
+    "ext-pcntl": "*",
+    "ext-posix": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^13.1",
+    "doctrine/orm": "^3.6",
+    "doctrine/dbal": "^4.4",
+    "illuminate/database": "^13.4",
+    "illuminate/events": "^13.4",
+    "symfony/cache": "^7.0 || ^8.0",
+    "symfony/var-exporter": "^7.0 || ^8.0",
+    "symfony/framework-bundle": "^7.0 || ^8.0",
+    "phpstan/phpstan": "^2.1",
+    "laravel/pint": "^1.29"
+  },
+  "autoload": {
+    "psr-4": {
+      "Henderkes\\Fork\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "symfony": {
+      "bundles": {
+        "Henderkes\\Fork\\Symfony\\ForkBundle": [
+          "all"
+        ]
+      }
+    },
+    "laravel": {
+      "providers": [
+        "Henderkes\\Fork\\Laravel\\ForkServiceProvider"
+      ]
+    }
+  }
+}

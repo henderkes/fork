@@ -27,5 +27,6 @@ WIP, will add default support for Symfony to automatically reconnect Doctrine, H
 
 - PHP 8.5+ ZTS
 - PCNTL extension
-- POSIX operating system (Linux, macOS, BSD)
+- POSIX extension
+- Linux, BSD or macOS
 - A SAPI compatible with forking threads. Only tested with FrankenPHP.
