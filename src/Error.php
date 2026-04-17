@@ -3,4 +3,4 @@ declare(strict_types=1);
 
 namespace Henderkes\Fork;
 
-class Error extends \Error {}
+abstract class Error extends \Exception {}
