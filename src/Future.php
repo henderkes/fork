@@ -259,7 +259,7 @@ final class Future
     }
 
     /**
-     * @return array{ok: true, value: mixed}|array{ok: false, class: class-string, message: string, trace: string, code?: int}|null
+     * @return array{ok: true, value: mixed}|array{ok: false, class: string, message: string, trace: string, code?: int}|null
      */
     private function decodePayload(string $data): ?array
     {
@@ -279,7 +279,6 @@ final class Future
         $trace = \is_string($result['trace'] ?? null) ? $result['trace'] : '';
         $code = \is_int($result['code'] ?? null) ? $result['code'] : 0;
 
-        /* @var class-string $class */
         return ['ok' => false, 'class' => $class, 'message' => $message, 'trace' => $trace, 'code' => $code];
     }
 
