@@ -110,12 +110,12 @@ final class Runtime
     /**
      * Fork and run $task in a child process.
      *
-     * @param  callable  $task  a closure (or other callable) to execute in the child
-     * @param  array<mixed>  $argv  positional arguments unpacked into the task
+     * @param callable     $task a closure (or other callable) to execute in the child
+     * @param array<mixed> $argv positional arguments unpacked into the task
      *
-     * @throws Runtime\Exception\Closed if this runtime has already been closed
+     * @throws Runtime\Exception\Closed           if this runtime has already been closed
      * @throws Runtime\Exception\SocketPairFailed if the kernel refused to allocate the socket pair
-     * @throws Runtime\Exception\ForkFailed if pcntl_fork() failed
+     * @throws Runtime\Exception\ForkFailed       if pcntl_fork() failed
      */
     public function run(callable $task, array $argv = []): Future
     {
@@ -209,8 +209,8 @@ final class Runtime
     }
 
     /**
-     * @param  array<mixed>  $argv
-     * @param  resource  $childEnd
+     * @param array<mixed> $argv
+     * @param resource     $childEnd
      */
     private function runChild(callable $task, array $argv, mixed $childEnd): never
     {
@@ -230,7 +230,8 @@ final class Runtime
     /**
      * Run the task and its hook pairs in the child.
      *
-     * @param  array<mixed>  $argv
+     * @param array<mixed> $argv
+     *
      * @return array{0: int, 1: string}
      */
     private function executeTaskInChild(callable $task, array $argv): array
@@ -267,7 +268,7 @@ final class Runtime
     }
 
     /**
-     * @param  resource  $parentEnd
+     * @param resource $parentEnd
      */
     private function runParent(int $pid, mixed $parentEnd): Future
     {
@@ -309,7 +310,7 @@ final class Runtime
     }
 
     /**
-     * @param  resource  $stream
+     * @param resource $stream
      */
     private function writeFramed(mixed $stream, string $payload): void
     {
@@ -326,7 +327,7 @@ final class Runtime
     }
 
     /**
-     * @param  resource  $childEnd
+     * @param resource $childEnd
      */
     private function waitForParentReady(mixed $childEnd): void
     {
@@ -344,7 +345,7 @@ final class Runtime
     }
 
     /**
-     * @param  resource  $parentEnd
+     * @param resource $parentEnd
      */
     private function releaseChild(mixed $parentEnd): void
     {

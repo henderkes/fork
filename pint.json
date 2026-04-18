@@ -1,3 +1,10 @@
 {
-    "preset": "symfony"
+    "preset": "symfony",
+    "rules": {
+        "yoda_style": {
+            "equal": false,
+            "identical": false,
+            "less_and_greater": false
+        }
+    }
 }

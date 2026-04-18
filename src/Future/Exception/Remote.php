@@ -21,7 +21,7 @@ final class Remote extends \Henderkes\Fork\Future\Exception
         int $remoteCode = 0,
     ) {
         $message = $remoteClass.': '.$remoteMessage;
-        if ('' !== $remoteTrace) {
+        if ($remoteTrace !== '') {
             $message .= "\n\nRemote stack trace:\n".$remoteTrace;
         }
         parent::__construct($message, $remoteCode);
