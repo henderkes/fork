@@ -1,0 +1,10 @@
+parameters:
+    level: max
+    paths:
+        - src
+    excludePaths:
+        # Symfony/Laravel integrations depend on framework types that aren't
+        # part of our require block (they're suggest: in composer.json), so
+        # excluding the integration trees is intentional.
+        - src/Symfony
+        - src/Laravel

@@ -43,5 +43,10 @@
         "Henderkes\\Fork\\Laravel\\ForkServiceProvider"
       ]
     }
+  },
+  "scripts": {
+    "phpstan": "phpstan analyse",
+    "pint": "pint",
+    "pint:check": "pint --test"
   }
 }
