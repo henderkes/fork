@@ -11,6 +11,8 @@ ext-parallel can already offload tasks to child threads, however every thread ha
 
 spatie/fork solves this issue, but the parent process can't do anything while children are started. This library combines ext-parallel's Runtime and Future approach with the Copy-on-Write runtime of `pcntl_fork`.
 
+Other fork libraries generally only work in CLI contexts, work with stdout/stderr or don't fulfill all the requirements I personally have.
+
 ### What do you need to know?
 
 The entire runtime is forked, children and parent process share memory initially. This comes with two caveats:
@@ -19,9 +21,61 @@ The entire runtime is forked, children and parent process share memory initially
 - Existing resources going out of scope could call destructors, which could blow up the parent process. Keep a reference to them until you call exit() in the child threads.
 - FrankenPHP automatically force-exits child processes safely.
 
-### Symfony/Laravel integration
+### Symfony integration
 
-WIP, will add default support for Symfony to automatically reconnect Doctrine, HttpClient and others.
+Lets you autowire a pre-configured Runtime for common Symfony scenarios.
+Currently, resets all Doctrine database connections or Symfony HttpClients for you automatically. More features may be added over time.
+
+```php
+public function report(Runtime $rt, EntityManagerInterface $em): JsonResponse
+{
+    $posts = $rt->run(fn () => $em->getRepository(Post::class)->findAll());
+    $users = $rt->run(fn () => $em->getRepository(User::class)->findAll());
+    $books = $em->getRepository(Book::class)->findAll();
+    return $this->json([
+        'posts' => count($posts->value()),
+        'users' => count($users->value()),
+        'books' => count($books->value())
+    ]);
+}
+```
+
+For your own services that hold per-process state, implement
+`Henderkes\Fork\Symfony\ForkAwareInterface::atFork()`. The bundle
+auto-tags services with `henderkes_fork.reset` and wires their
+`atFork()` method as a before-child hook.
+Manual tagging with a custom method name also works:
+
+```yaml
+# services.yaml
+App\Service\LegacyClient:
+    tags: [{ name: henderkes_fork.reset, method: reconnect }]
+```
+
+If you have `symfony/flex` enabled, just install this library and you're done. If not, manually enable it:
+
+```php
+// bundles.php
+return [                                                                                                                                                                                               
+  // ...
+  Henderkes\Fork\Symfony\ForkBundle::class => ['all' => true],                                                                                                                                       
+];
+
+### Laravel integration
+
+Ships a service provider that binds `Henderkes\Fork\Runtime` non-shared.
+The bound factory registers a `before(child:)` hook that purges every configured
+DB connection in the forked child, so the next query reconnects
+lazily.
+For other resources the Laravel integration does not cover
+(Redis, HTTP, Elasticsearch, …), register your own hooks on the
+resolved `Runtime`:
+
+```php
+$rt->before(name: 'redis', child: function () use ($redis): void {
+    $redis->close();
+});
+```
 
 ### Requirements
 
