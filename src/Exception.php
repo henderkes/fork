@@ -12,4 +12,6 @@ namespace Henderkes\Fork;
  * this class so callers can catch everything from this package with a
  * single catch.
  */
-abstract class Exception extends \RuntimeException {}
+abstract class Exception extends \RuntimeException
+{
+}
