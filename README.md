@@ -41,15 +41,30 @@ public function report(Runtime $rt, EntityManagerInterface $em): JsonResponse
 ```
 
 For your own services that hold per-process state, implement
-`Henderkes\Fork\Symfony\ForkAwareInterface::atFork()`. The bundle
-auto-tags services with `henderkes_fork.reset` and wires their
-`atFork()` method as a before-child hook.
-Manual tagging with a custom method name also works:
+`Henderkes\Fork\Symfony\ForkAwareInterface::configure()`. The bundle
+auto-tags services with `henderkes_fork.configure` and calls their
+`configure(Runtime $runtime): Runtime` method on every Runtime the
+container autowires:
+
+```php
+final class LegacyClient implements ForkAwareInterface
+{
+    public function configure(Runtime $runtime): Runtime
+    {
+        return $runtime
+            ->before(name: 'legacy.reconnect', child: fn () => $this->reconnect())
+            ->after(name: 'legacy.log', parent: fn ($result) => $this->log($result));
+    }
+}
+```
+
+Third-party bundles can integrate without a hard dependency on this
+library by using the tag directly:
 
 ```yaml
 # services.yaml
 App\Service\LegacyClient:
-    tags: [{ name: henderkes_fork.reset, method: reconnect }]
+    tags: [{ name: henderkes_fork.configure, method: configure }]
 ```
 
 If you have `symfony/flex` enabled, just install this library and you're done. If not, manually enable it:
