@@ -14,17 +14,18 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
  * Wires {@see Runtime} into the Symfony container with sensible defaults.
  *
  *  - Any service implementing {@see ForkAwareInterface} is auto-tagged
- *    with `henderkes_fork.reset` and its `atFork()` method is registered
- *    as a `before(child:)` hook.
+ *    with `henderkes_fork.configure` and its `configure()` method is
+ *    invoked on each Runtime instance produced by the container.
  *  - Manual tagging also works with a `method` attribute:
- *        tags: [{ name: henderkes_fork.reset, method: reconnect }]
+ *        tags: [{ name: henderkes_fork.configure, method: configure }]
+ *    The named method must accept a {@see Runtime} and return one.
  *
  * {@see Runtime} itself is registered as a non-shared service so each
  * autowired call gets its own instance.
  */
 final class ForkBundle extends Bundle implements CompilerPassInterface
 {
-    public const string TAG = 'henderkes_fork.reset';
+    public const string TAG = 'henderkes_fork.configure';
 
     public function build(ContainerBuilder $container): void
     {
@@ -36,9 +37,6 @@ final class ForkBundle extends Bundle implements CompilerPassInterface
 
     public function process(ContainerBuilder $container): void
     {
-        // The `doctrine` service is Doctrine\Persistence\ManagerRegistry,
-        // which exposes *all* configured entity managers — so our reset
-        // handler covers non-default EMs as well.
         $doctrineRegistry = $container->has('doctrine')
             ? new Reference('doctrine')
             : null;
@@ -49,7 +47,7 @@ final class ForkBundle extends Bundle implements CompilerPassInterface
 
         $tagged = [];
         foreach ($container->findTaggedServiceIds(self::TAG) as $id => $tags) {
-            $method = $tags[0]['method'] ?? 'atFork';
+            $method = $tags[0]['method'] ?? 'configure';
             $tagged[] = ['ref' => new Reference($id), 'method' => $method];
         }
 

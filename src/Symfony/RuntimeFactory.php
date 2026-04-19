@@ -24,8 +24,8 @@ final class RuntimeFactory
      */
     private static array $forkChildStash = [];
 
-    /** @var array<string, \Closure> */
-    private array $beforeChild = [];
+    /** @var list<\Closure(Runtime): Runtime> */
+    private array $configurators = [];
 
     /**
      * @param object|null                              $doctrineRegistry a Doctrine\Persistence\ManagerRegistry
@@ -37,17 +37,17 @@ final class RuntimeFactory
         array $taggedServices = [],
     ) {
         if ($doctrineRegistry !== null) {
-            $this->beforeChild['doctrine'] = self::doctrineResetHandler($doctrineRegistry);
+            $this->configurators[] = self::doctrineConfigurator($doctrineRegistry);
         }
 
         if ($httpClient !== null) {
-            $this->beforeChild['http_client'] = self::httpClientResetHandler($httpClient);
+            $this->configurators[] = self::httpClientConfigurator($httpClient);
         }
 
         foreach ($taggedServices as $entry) {
             $service = $entry['ref'];
             $method = $entry['method'];
-            $this->beforeChild[$service::class] = $service->$method(...);
+            $this->configurators[] = $service->$method(...);
         }
     }
 
@@ -55,29 +55,32 @@ final class RuntimeFactory
     {
         $runtime = new Runtime();
 
-        foreach ($this->beforeChild as $name => $handler) {
-            $runtime->before(child: $handler, name: $name);
+        foreach ($this->configurators as $configurator) {
+            $runtime = $configurator($runtime);
         }
 
         return $runtime;
     }
 
-    private static function doctrineResetHandler(object $registry): \Closure
+    private static function doctrineConfigurator(object $registry): \Closure
     {
-        return static function () use ($registry): void {
-            if (!Runtime::inChild()) {
-                return;
-            }
-            if (!\method_exists($registry, 'getManagers')) {
-                return;
-            }
-
-            foreach ($registry->getManagers() as $manager) {
-                if (\is_object($manager)) {
-                    self::resetDoctrineConnection($manager);
+        return static fn (Runtime $runtime): Runtime => $runtime->before(
+            child: static function () use ($registry): void {
+                if (!Runtime::inChild()) {
+                    return;
                 }
-            }
-        };
+                if (!\method_exists($registry, 'getManagers')) {
+                    return;
+                }
+
+                foreach ($registry->getManagers() as $manager) {
+                    if (\is_object($manager)) {
+                        self::resetDoctrineConnection($manager);
+                    }
+                }
+            },
+            name: 'doctrine',
+        );
     }
 
     private static function resetDoctrineConnection(object $emOrConnection): void
@@ -110,17 +113,20 @@ final class RuntimeFactory
         }
     }
 
-    private static function httpClientResetHandler(object $client): \Closure
+    private static function httpClientConfigurator(object $client): \Closure
     {
-        return static function () use ($client): void {
-            if (!Runtime::inChild()) {
-                return;
-            }
-            try {
-                self::resetCurlState($client);
-            } catch (\Throwable) {
-            }
-        };
+        return static fn (Runtime $runtime): Runtime => $runtime->before(
+            child: static function () use ($client): void {
+                if (!Runtime::inChild()) {
+                    return;
+                }
+                try {
+                    self::resetCurlState($client);
+                } catch (\Throwable) {
+                }
+            },
+            name: 'http_client',
+        );
     }
 
     private static function resetCurlState(object $client, int $depth = 0): void
