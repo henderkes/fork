@@ -52,8 +52,8 @@ final class LegacyClient implements ForkAwareInterface
     public function configure(Runtime $runtime): Runtime
     {
         return $runtime
-            ->before(name: 'legacy.reconnect', child: fn () => $this->reconnect())
-            ->after(name: 'legacy.log', parent: fn ($result) => $this->log($result));
+            ->before(child: fn () => $this->reconnect())
+            ->after(parent: fn ($result) => $this->log($result));
     }
 }
 ```
@@ -87,7 +87,7 @@ For other resources the Laravel integration does not cover
 resolved `Runtime`:
 
 ```php
-$rt->before(name: 'redis', child: function () use ($redis): void {
+$rt->before(child: function () use ($redis): void {
     $redis->close();
 });
 ```

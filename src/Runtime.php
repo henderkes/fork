@@ -31,76 +31,44 @@ final class Runtime
     /** @var array<int, Future> */
     private array $children = [];
 
-    /** @var array<string, callable> */
+    /** @var list<callable> */
     private array $beforeChild = [];
 
-    /** @var array<string, callable> */
+    /** @var list<callable> */
     private array $beforeParent = [];
 
-    /** @var array<string, callable> */
+    /** @var list<callable> */
     private array $afterChild = [];
 
-    /** @var array<string, callable> */
+    /** @var list<callable> */
     private array $afterParent = [];
 
-    public function before(?callable $child = null, ?callable $parent = null, string $name = ''): self
+    public function before(?callable $child = null, ?callable $parent = null): self
     {
         if ($child !== null) {
-            $this->beforeChild[$name] = $child;
+            $this->beforeChild[] = $child;
         }
         if ($parent !== null) {
-            $this->beforeParent[$name] = $parent;
+            $this->beforeParent[] = $parent;
         }
 
         return $this;
     }
 
-    public function after(?callable $child = null, ?callable $parent = null, string $name = ''): self
+    public function after(?callable $child = null, ?callable $parent = null): self
     {
         if ($child !== null) {
-            $this->afterChild[$name] = $child;
+            $this->afterChild[] = $child;
         }
         if ($parent !== null) {
-            $this->afterParent[$name] = $parent;
+            $this->afterParent[] = $parent;
         }
 
         return $this;
     }
 
     /**
-     * Remove a previously registered before-hook by name, on either or
-     * both sides. No-op if no hook with that name exists.
-     */
-    public function removeBefore(string $name, bool $child = true, bool $parent = true): self
-    {
-        if ($child) {
-            unset($this->beforeChild[$name]);
-        }
-        if ($parent) {
-            unset($this->beforeParent[$name]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Remove a previously registered after-hook by name.
-     */
-    public function removeAfter(string $name, bool $child = true, bool $parent = true): self
-    {
-        if ($child) {
-            unset($this->afterChild[$name]);
-        }
-        if ($parent) {
-            unset($this->afterParent[$name]);
-        }
-
-        return $this;
-    }
-
-    /**
-     * True inside a forked child, false in the parent. Because fork is
-     * process-global, this is intentionally a static check.
+     * True inside a forked child, false in the parent.
      */
     public static function inChild(): bool
     {

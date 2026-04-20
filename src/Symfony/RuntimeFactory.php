@@ -79,7 +79,6 @@ final class RuntimeFactory
                     }
                 }
             },
-            name: 'doctrine',
         );
     }
 
@@ -125,7 +124,6 @@ final class RuntimeFactory
                 } catch (\Throwable) {
                 }
             },
-            name: 'http_client',
         );
     }
 

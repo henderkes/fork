@@ -29,7 +29,7 @@ final class ForkServiceProvider extends ServiceProvider
                     } catch (\Throwable) {
                     }
                 }
-            }, name: 'laravel.db');
+            });
 
             return $runtime;
         });
