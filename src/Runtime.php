@@ -79,6 +79,7 @@ final class Runtime
      * @var list<mixed> values pinned for the lifetime of a forked child
      *
      * @noinspection PhpPropertyOnlyWrittenInspection
+     *
      * @phpstan-ignore property.onlyWritten
      */
     private static array $stashToAbandon = [];

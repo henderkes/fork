@@ -24,6 +24,8 @@ final class Future
 
     private bool $reaped = false;
 
+    private ?int $drainedAtNs = null;
+
     /**
      * @internal
      *
@@ -41,6 +43,55 @@ final class Future
             throw new \InvalidArgumentException('Expected a valid resource for stream');
         }
         $this->stream = $stream;
+    }
+
+    /**
+     * Reap every future in arrival order via stream_select, returning the
+     * results in input order. Faster than a serial {@see value()} loop
+     * when sibling workers finish out of order — slow children don't
+     * block collection of fast ones.
+     *
+     * @return list<mixed>
+     * @noinspection PhpUnused
+     */
+    public static function await(self ...$futures): array
+    {
+        $results = \array_fill(0, \count($futures), null);
+        /** @var array<int, array{0: int, 1: self}> $pending indexed by (int)$stream */
+        $pending = [];
+
+        foreach ($futures as $i => $f) {
+            if ($f->state !== State::Pending || !\is_resource($f->stream)) {
+                $results[$i] = $f->value();
+                continue;
+            }
+            $pending[(int) $f->stream] = [$i, $f];
+        }
+
+        while ($pending !== []) {
+            $read = [];
+            foreach ($pending as $key => [$_, $f]) {
+                $read[$key] = $f->stream;
+            }
+            $w = null;
+            $e = null;
+            $n = @\stream_select($read, $w, $e, null);
+            if ($n === false || $n === 0) {
+                break;
+            }
+            foreach ($read as $key => $_) {
+                [$i, $f] = $pending[$key];
+                unset($pending[$key]);
+                $results[$i] = $f->value();
+            }
+        }
+
+        // If select errored, drain whatever's left serially.
+        foreach ($pending as [$i, $f]) {
+            $results[$i] = $f->value();
+        }
+
+        return $results;
     }
 
     /**
@@ -66,6 +117,7 @@ final class Future
         }
 
         $payload = $this->readFramedPayload($stream);
+        $this->drainedAtNs = \hrtime(true);
         \fclose($stream);
         $this->stream = null;
 
@@ -94,6 +146,16 @@ final class Future
         $this->runtime->childCompleted($this->pid, $this->cached, $status);
 
         return $this->cached;
+    }
+
+    /**
+     * hrtime(true) at the moment this future's payload was drained from
+     * the socket, or null if the future hasn't been read yet. Useful for
+     * per-worker timing in dashboards; ordering matches completion order.
+     */
+    public function drainedAt(): ?int
+    {
+        return $this->drainedAtNs;
     }
 
     /**
