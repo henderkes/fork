@@ -192,6 +192,8 @@ final class Runtime
 
         $this->writeFramed($childEnd, $payload);
         \fclose($childEnd);
+
+        \posix_kill(\posix_getpid(), \SIGKILL);
         exit($exitCode);
     }
 
@@ -282,11 +284,19 @@ final class Runtime
      */
     private function writeFramed(mixed $stream, string $payload): void
     {
-        $framed = \pack('N', \strlen($payload)).$payload;
-        $len = \strlen($framed);
+        $this->writeAll($stream, \pack('N', \strlen($payload)));
+        $this->writeAll($stream, $payload);
+    }
+
+    /**
+     * @param resource $stream
+     */
+    private function writeAll(mixed $stream, string $data): void
+    {
+        $len = \strlen($data);
         $offset = 0;
         while ($offset < $len) {
-            $written = @\fwrite($stream, \substr($framed, $offset));
+            $written = @\fwrite($stream, $offset === 0 ? $data : \substr($data, $offset));
             if ($written === false || $written === 0) {
                 return;
             }
