@@ -12,18 +12,6 @@ use Henderkes\Fork\Runtime;
  */
 final class RuntimeFactory
 {
-    /**
-     * Process-local stash that keeps abandoned resources alive for the
-     * lifetime of a forked child, so PHP's GC doesn't call destructors
-     * that would close an fd the parent still uses.
-     *
-     * @var list<object>
-     *
-     * @phpstan-ignore property.onlyWritten
-     * @noinspection PhpPropertyOnlyWrittenInspection
-     */
-    private static array $forkChildStash = [];
-
     /** @var list<\Closure(Runtime): Runtime> */
     private array $configurators = [];
 
@@ -107,7 +95,7 @@ final class RuntimeFactory
 
         $old = $prop->getValue($conn);
         if (\is_object($old)) {
-            self::$forkChildStash[] = $old;
+            Runtime::abandon($old);
             $prop->setValue($conn, null);
         }
     }
@@ -146,7 +134,7 @@ final class RuntimeFactory
                     $handle = $multi->handle;
                     unset($multi->handle);
                     if (\is_object($handle)) {
-                        self::$forkChildStash[] = $handle;
+                        Runtime::abandon($handle);
                     }
                 }
 
@@ -154,7 +142,7 @@ final class RuntimeFactory
                     $share = $multi->share;
                     unset($multi->share);
                     if (\is_object($share)) {
-                        self::$forkChildStash[] = $share;
+                        Runtime::abandon($share);
                     }
                 }
             }

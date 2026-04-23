@@ -76,6 +76,30 @@ final class Runtime
     }
 
     /**
+     * @var list<mixed> values pinned for the lifetime of a forked child
+     *
+     * @noinspection PhpPropertyOnlyWrittenInspection
+     * @phpstan-ignore property.onlyWritten
+     */
+    private static array $stashToAbandon = [];
+
+    /**
+     * Pin values for the forked child's lifetime so PHP's GC won't close
+     * fds the parent still owns. {@see before()} child hooks.
+     *
+     * @throws \LogicException if called in the parent
+     */
+    public static function abandon(mixed ...$refs): void
+    {
+        if (!self::$inChild) {
+            throw new \LogicException('Runtime::abandon() is only valid in a forked child');
+        }
+        foreach ($refs as $ref) {
+            self::$stashToAbandon[] = $ref;
+        }
+    }
+
+    /**
      * Fork and run $task in a child process.
      *
      * @param callable     $task a closure (or other callable) to execute in the child
