@@ -73,8 +73,9 @@ If you have `symfony/flex` enabled, just install this library and you're done. I
 // bundles.php
 return [                                                                                                                                                                                               
   // ...
-  Henderkes\Fork\Symfony\ForkBundle::class => ['all' => true],                                                                                                                                       
+  Henderkes\Fork\Symfony\ForkBundle::class => ['all' => true],         
 ];
+```
 
 ### Laravel integration
 
