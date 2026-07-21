@@ -27,6 +27,15 @@ final class Future
     private ?int $drainedAtNs = null;
 
     /**
+     * Runtime holds its Futures strongly, and a strong
+     * back-reference here would form a cycle that defers
+     * {@see Runtime::__destruct()}
+     *
+     * @var \WeakReference<Runtime>
+     */
+    private \WeakReference $runtime;
+
+    /**
      * @internal
      *
      * @param resource $stream
@@ -34,7 +43,7 @@ final class Future
     public function __construct(
         private int $pid,
         mixed $stream,
-        private Runtime $runtime,
+        Runtime $runtime,
     ) {
         if ($pid <= 0) {
             throw new \InvalidArgumentException("Expected a positive pid, got $pid");
@@ -43,6 +52,7 @@ final class Future
             throw new \InvalidArgumentException('Expected a valid resource for stream');
         }
         $this->stream = $stream;
+        $this->runtime = \WeakReference::create($runtime);
     }
 
     /**
@@ -143,7 +153,7 @@ final class Future
 
         $this->state = State::Succeeded;
         $this->cached = $decoded['value'];
-        $this->runtime->childCompleted($this->pid, $this->cached, $status);
+        $this->runtime->get()?->childCompleted($this->pid, $this->cached, $status);
 
         return $this->cached;
     }
@@ -373,7 +383,7 @@ final class Future
         $status = $this->waitStatus ?? 0;
         $this->state = $e instanceof Future\Exception\Killed ? State::Killed : State::Failed;
         $this->cachedError = $e;
-        $this->runtime->childCompleted($this->pid, $e, $status);
+        $this->runtime->get()?->childCompleted($this->pid, $e, $status);
         throw $e;
     }
 
